@@ -9,6 +9,7 @@ import 'sections/playground_section.dart';
 import 'sections/projects_section.dart';
 import 'sections/skills_section.dart';
 import 'theme/neomorphic_theme.dart';
+import 'widgets/absurd_bubble_level.dart';
 import 'widgets/neomorphic_button.dart';
 import 'widgets/passive_telemetry_hud.dart';
 import 'widgets/vitaliy_chat_bot.dart';
@@ -71,6 +72,38 @@ class _PortfolioHomePageState extends State<PortfolioHomePage> {
   bool _isOverspeed = false;
   bool _isSleeping = false;
   Timer? _inactivityTimer;
+
+  // Абсурдные стрелки и уровень горизонта
+  double _interfaceShiftX = 0.0;
+  int _leftShiftClicks = 0;
+  bool _rightArrowFled = false;
+  double _levelTiltTurns = 0.0;
+
+  void _onLeftArrowPressed() {
+    setState(() {
+      _leftShiftClicks++;
+      if (_leftShiftClicks >= 4) {
+        _leftShiftClicks = 0;
+        _interfaceShiftX = 0.0;
+      } else {
+        _interfaceShiftX -= 170.0;
+      }
+    });
+  }
+
+  void _onRightArrowPressed() {
+    setState(() {
+      _rightArrowFled = true;
+    });
+    // Через 3.5 секунды стрелка робко возвращается обратно из-за границы экрана
+    Timer(const Duration(milliseconds: 3500), () {
+      if (mounted) {
+        setState(() {
+          _rightArrowFled = false;
+        });
+      }
+    });
+  }
 
   @override
   void initState() {
@@ -428,12 +461,17 @@ class _PortfolioHomePageState extends State<PortfolioHomePage> {
         onHover: _onMouseHover,
         child: Stack(
           children: [
-            // Поворот страницы на 90 градусов при каждом клике
-            AnimatedRotation(
-              turns: _pageTurns,
-              duration: const Duration(milliseconds: 700),
-              curve: Curves.easeInOutBack,
-              child: mainContent,
+            // Сдвиг всего интерфейса влево (левая стрелка) + поворот (рефреш / уровень)
+            AnimatedContainer(
+              duration: Duration(milliseconds: _leftShiftClicks == 0 ? 700 : 380),
+              curve: _leftShiftClicks == 0 ? Curves.elasticOut : Curves.easeOutCubic,
+              transform: Matrix4.translationValues(_interfaceShiftX, 0, 0),
+              child: AnimatedRotation(
+                turns: _pageTurns + _levelTiltTurns,
+                duration: const Duration(milliseconds: 700),
+                curve: Curves.easeInOutBack,
+                child: mainContent,
+              ),
             ),
 
             // Оверлей фонарика (Тёмная тема в пещере)
@@ -481,6 +519,114 @@ class _PortfolioHomePageState extends State<PortfolioHomePage> {
                   ),
                 ),
               ),
+
+            // Левая стрелка: сдвигает весь интерфейс влево несколько шагов, а потом пружинисто центрирует
+            Positioned(
+              left: 18,
+              top: MediaQuery.of(context).size.height / 2 - 24,
+              child: Tooltip(
+                message: _leftShiftClicks == 0
+                    ? 'Сдвинуть весь сайт влево (Шаг 1/3)'
+                    : _leftShiftClicks == 3
+                        ? 'Центрировать интерфейс'
+                        : 'Сдвинуть сайт ещё левее (Шаг ${_leftShiftClicks + 1}/3)',
+                child: MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: GestureDetector(
+                    onTap: _onLeftArrowPressed,
+                    child: Container(
+                      width: 46,
+                      height: 46,
+                      decoration: BoxDecoration(
+                        color: NeoColors.surface,
+                        shape: BoxShape.circle,
+                        boxShadow: NeoShadows.raisedSm(),
+                      ),
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          const Icon(
+                            Icons.arrow_back_ios_new_rounded,
+                            size: 18,
+                            color: NeoColors.sageDark,
+                          ),
+                          if (_leftShiftClicks > 0)
+                            Positioned(
+                              top: 5,
+                              right: 6,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: NeoColors.roseDark,
+                                  borderRadius: BorderRadius.circular(NeoRadius.full),
+                                ),
+                                child: Text(
+                                  '$_leftShiftClicks/3',
+                                  style: const TextStyle(
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+            // Правая стрелка: при нажатии со свистом улетает за правую границу экрана!
+            Positioned(
+              right: 18,
+              top: MediaQuery.of(context).size.height / 2 - 24,
+              child: AnimatedContainer(
+                duration: Duration(milliseconds: _rightArrowFled ? 450 : 700),
+                curve: _rightArrowFled ? Curves.easeInBack : Curves.easeOutBack,
+                transform: Matrix4.translationValues(_rightArrowFled ? 400.0 : 0.0, 0, 0),
+                child: Tooltip(
+                  message: _rightArrowFled
+                      ? 'Уехала вправо...'
+                      : 'Стрелка вправо (Нажмите, чтобы отправить)',
+                  child: MouseRegion(
+                    cursor: SystemMouseCursors.click,
+                    child: GestureDetector(
+                      onTap: _onRightArrowPressed,
+                      child: Container(
+                        width: 46,
+                        height: 46,
+                        decoration: BoxDecoration(
+                          color: NeoColors.surface,
+                          shape: BoxShape.circle,
+                          boxShadow: NeoShadows.raisedSm(),
+                        ),
+                        child: const Center(
+                          child: Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            size: 18,
+                            color: NeoColors.lavenderDark,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+            // Строительный уровень страницы (пассивный пузырек + калибровка горизонта)
+            Positioned(
+              bottom: 20,
+              right: 90,
+              child: AbsurdBubbleLevel(
+                cursorPos: _cursorPos,
+                onTiltChanged: (tilt) {
+                  setState(() => _levelTiltTurns = tilt);
+                },
+              ),
+            ),
 
             // Пассивная телеметрия мыши в левом нижнем углу (спидометр и индикатор покоя)
             Positioned(
