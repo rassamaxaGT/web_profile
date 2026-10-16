@@ -4,7 +4,12 @@ import 'neomorphic_button.dart';
 import 'neomorphic_card.dart';
 
 class VitaliyChatBot extends StatefulWidget {
-  const VitaliyChatBot({super.key});
+  final Widget? underButton;
+
+  const VitaliyChatBot({
+    super.key,
+    this.underButton,
+  });
 
   @override
   State<VitaliyChatBot> createState() => _VitaliyChatBotState();
@@ -12,6 +17,7 @@ class VitaliyChatBot extends StatefulWidget {
 
 class _VitaliyChatBotState extends State<VitaliyChatBot> {
   bool _isOpen = false;
+  bool _isButtonLifted = false;
   final TextEditingController _controller = TextEditingController();
   final List<Map<String, String>> _messages = [
     {'from': 'vitaliy', 'text': 'Здравствуйте. Готов ответить на технические вопросы по коду.'},
@@ -156,11 +162,35 @@ class _VitaliyChatBotState extends State<VitaliyChatBot> {
               ),
             ),
 
-          // Кнопка открытия
-          NeomorphicButton(
-            text: _isOpen ? 'Свернуть' : 'Связаться онлайн',
-            height: 38,
-            onPressed: () => setState(() => _isOpen = !_isOpen),
+          // Кнопка поддержки, под которой прячется строительный уровень
+          Stack(
+            clipBehavior: Clip.none,
+            alignment: Alignment.bottomRight,
+            children: [
+              // Спрятанный под кнопкой уровень
+              if (widget.underButton != null)
+                Positioned(
+                  bottom: 2,
+                  right: 4,
+                  child: widget.underButton!,
+                ),
+
+              // Сама кнопка, которая приподнимается при наведении
+              MouseRegion(
+                onEnter: (_) => setState(() => _isButtonLifted = true),
+                onExit: (_) => setState(() => _isButtonLifted = false),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeOutBack,
+                  transform: Matrix4.translationValues(0, _isButtonLifted ? -36.0 : 0.0, 0),
+                  child: NeomorphicButton(
+                    text: _isOpen ? 'Свернуть' : 'Связаться онлайн',
+                    height: 38,
+                    onPressed: () => setState(() => _isOpen = !_isOpen),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),

@@ -520,111 +520,106 @@ class _PortfolioHomePageState extends State<PortfolioHomePage> {
                 ),
               ),
 
-            // Левая стрелка: сдвигает весь интерфейс влево несколько шагов, а потом пружинисто центрирует
+            // Стрелки навигации вместе внизу слева
             Positioned(
-              left: 18,
-              top: MediaQuery.of(context).size.height / 2 - 24,
-              child: Tooltip(
-                message: _leftShiftClicks == 0
-                    ? 'Сдвинуть весь сайт влево (Шаг 1/3)'
-                    : _leftShiftClicks == 3
-                        ? 'Центрировать интерфейс'
-                        : 'Сдвинуть сайт ещё левее (Шаг ${_leftShiftClicks + 1}/3)',
-                child: MouseRegion(
-                  cursor: SystemMouseCursors.click,
-                  child: GestureDetector(
-                    onTap: _onLeftArrowPressed,
-                    child: Container(
-                      width: 46,
-                      height: 46,
-                      decoration: BoxDecoration(
-                        color: NeoColors.surface,
-                        shape: BoxShape.circle,
-                        boxShadow: NeoShadows.raisedSm(),
-                      ),
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          const Icon(
-                            Icons.arrow_back_ios_new_rounded,
-                            size: 18,
-                            color: NeoColors.sageDark,
+              left: 20,
+              bottom: 64,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Левая стрелка: сдвигает весь интерфейс влево несколько шагов, а потом центрирует
+                  Tooltip(
+                    message: _leftShiftClicks == 0
+                        ? 'Сдвинуть весь сайт влево (Шаг 1/3)'
+                        : _leftShiftClicks == 3
+                            ? 'Центрировать интерфейс'
+                            : 'Сдвинуть сайт ещё левее (Шаг ${_leftShiftClicks + 1}/3)',
+                    child: MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: GestureDetector(
+                        onTap: _onLeftArrowPressed,
+                        child: Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: NeoColors.surface,
+                            shape: BoxShape.circle,
+                            boxShadow: NeoShadows.raisedSm(),
                           ),
-                          if (_leftShiftClicks > 0)
-                            Positioned(
-                              top: 5,
-                              right: 6,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: NeoColors.roseDark,
-                                  borderRadius: BorderRadius.circular(NeoRadius.full),
-                                ),
-                                child: Text(
-                                  '$_leftShiftClicks/3',
-                                  style: const TextStyle(
-                                    fontSize: 8,
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.white,
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              const Icon(
+                                Icons.arrow_back_ios_new_rounded,
+                                size: 16,
+                                color: NeoColors.sageDark,
+                              ),
+                              if (_leftShiftClicks > 0)
+                                Positioned(
+                                  top: 4,
+                                  right: 4,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1.5),
+                                    decoration: BoxDecoration(
+                                      color: NeoColors.roseDark,
+                                      borderRadius: BorderRadius.circular(NeoRadius.full),
+                                    ),
+                                    child: Text(
+                                      '$_leftShiftClicks/3',
+                                      style: const TextStyle(
+                                        fontSize: 7.5,
+                                        fontWeight: FontWeight.w800,
+                                        color: Colors.white,
+                                      ),
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-
-            // Правая стрелка: при нажатии со свистом улетает за правую границу экрана!
-            Positioned(
-              right: 18,
-              top: MediaQuery.of(context).size.height / 2 - 24,
-              child: AnimatedContainer(
-                duration: Duration(milliseconds: _rightArrowFled ? 450 : 700),
-                curve: _rightArrowFled ? Curves.easeInBack : Curves.easeOutBack,
-                transform: Matrix4.translationValues(_rightArrowFled ? 400.0 : 0.0, 0, 0),
-                child: Tooltip(
-                  message: _rightArrowFled
-                      ? 'Уехала вправо...'
-                      : 'Стрелка вправо (Нажмите, чтобы отправить)',
-                  child: MouseRegion(
-                    cursor: SystemMouseCursors.click,
-                    child: GestureDetector(
-                      onTap: _onRightArrowPressed,
-                      child: Container(
-                        width: 46,
-                        height: 46,
-                        decoration: BoxDecoration(
-                          color: NeoColors.surface,
-                          shape: BoxShape.circle,
-                          boxShadow: NeoShadows.raisedSm(),
-                        ),
-                        child: const Center(
-                          child: Icon(
-                            Icons.arrow_forward_ios_rounded,
-                            size: 18,
-                            color: NeoColors.lavenderDark,
+                            ],
                           ),
                         ),
                       ),
                     ),
                   ),
-                ),
-              ),
-            ),
+                  const SizedBox(width: 8),
 
-            // Строительный уровень страницы (пассивный пузырек + калибровка горизонта)
-            Positioned(
-              bottom: 20,
-              right: 90,
-              child: AbsurdBubbleLevel(
-                cursorPos: _cursorPos,
-                onTiltChanged: (tilt) {
-                  setState(() => _levelTiltTurns = tilt);
-                },
+                  // Правая стрелка: при нажатии со свистом улетает через весь экран за правую границу!
+                  AnimatedContainer(
+                    duration: Duration(milliseconds: _rightArrowFled ? 600 : 700),
+                    curve: _rightArrowFled ? Curves.easeInQuad : Curves.easeOutBack,
+                    transform: Matrix4.translationValues(
+                      _rightArrowFled ? (MediaQuery.of(context).size.width + 120.0) : 0.0,
+                      0,
+                      0,
+                    ),
+                    child: Tooltip(
+                      message: _rightArrowFled
+                          ? 'Улетела направо...'
+                          : 'Стрелка вправо (Нажмите, чтобы отправить)',
+                      child: MouseRegion(
+                        cursor: SystemMouseCursors.click,
+                        child: GestureDetector(
+                          onTap: _onRightArrowPressed,
+                          child: Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: NeoColors.surface,
+                              shape: BoxShape.circle,
+                              boxShadow: NeoShadows.raisedSm(),
+                            ),
+                            child: const Center(
+                              child: Icon(
+                                Icons.arrow_forward_ios_rounded,
+                                size: 16,
+                                color: NeoColors.lavenderDark,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
 
@@ -640,8 +635,15 @@ class _PortfolioHomePageState extends State<PortfolioHomePage> {
               ),
             ),
 
-            // Фейковый чат-бот Виталий в правом нижнем углу
-            const VitaliyChatBot(),
+            // Фейковый чат-бот Виталий в правом нижнем углу, под кнопкой которого прячется строительный уровень
+            VitaliyChatBot(
+              underButton: AbsurdBubbleLevel(
+                cursorPos: _cursorPos,
+                onTiltChanged: (tilt) {
+                  setState(() => _levelTiltTurns = tilt);
+                },
+              ),
+            ),
           ],
         ),
       ),
