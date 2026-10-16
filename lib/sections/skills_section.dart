@@ -255,22 +255,20 @@ class _MeltingSkillTagState extends State<_MeltingSkillTag> {
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOutBack,
+        duration: const Duration(milliseconds: 260),
+        curve: Curves.easeOutCubic,
         transform: Matrix4.translationValues(0, _isHovered ? 7.0 : 0.0, 0),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
           color: widget.pastelAccent.withValues(alpha: _isHovered ? 0.6 : 0.35),
           borderRadius: BorderRadius.circular(NeoRadius.full),
-          boxShadow: _isHovered
-              ? [
-                  BoxShadow(
-                    color: widget.accentColor.withValues(alpha: 0.2),
-                    offset: const Offset(0, 4),
-                    blurRadius: 4,
-                  ),
-                ]
-              : null,
+          boxShadow: [
+            BoxShadow(
+              color: widget.accentColor.withValues(alpha: _isHovered ? 0.2 : 0.0),
+              offset: Offset(0, _isHovered ? 4.0 : 0.0),
+              blurRadius: _isHovered ? 4.0 : 0.0,
+            ),
+          ],
         ),
         child: Text(
           _isHovered ? '${widget.tag} 💧' : widget.tag,
