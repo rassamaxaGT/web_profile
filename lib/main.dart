@@ -24,7 +24,7 @@ class DevPortfolioApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Alexandr R. • Flutter & Frontend Portfolio',
+      title: 'Richard Brook • Flutter & Frontend Portfolio',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,

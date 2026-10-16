@@ -48,7 +48,7 @@ class FooterSection extends StatelessWidget {
           const SizedBox(height: NeoSpacing.xs),
 
           const Text(
-            '© 2026 Alexandr R.',
+            '© 2026 Richard Brook',
             style: TextStyle(
               fontSize: 11,
               color: NeoColors.textTertiary,

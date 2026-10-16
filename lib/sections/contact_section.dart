@@ -216,7 +216,7 @@ class _ContactSectionState extends State<ContactSection> {
                             child: NeomorphicInput(
                               controller: _nameController,
                               labelText: 'Имя',
-                              hintText: 'Александр',
+                              hintText: 'Richard',
                             ),
                           ),
                           const SizedBox(width: NeoSpacing.lg),
@@ -224,7 +224,7 @@ class _ContactSectionState extends State<ContactSection> {
                             child: NeomorphicInput(
                               controller: _emailController,
                               labelText: 'Email для ответа',
-                              hintText: 'alex@domain.com',
+                              hintText: 'richard@brook.dev',
                               keyboardType: TextInputType.emailAddress,
                             ),
                           ),
@@ -236,13 +236,13 @@ class _ContactSectionState extends State<ContactSection> {
                           NeomorphicInput(
                             controller: _nameController,
                             labelText: 'Имя',
-                            hintText: 'Александр',
+                            hintText: 'Richard',
                           ),
                           const SizedBox(height: NeoSpacing.md),
                           NeomorphicInput(
                             controller: _emailController,
                             labelText: 'Email для ответа',
-                            hintText: 'alex@domain.com',
+                            hintText: 'richard@brook.dev',
                             keyboardType: TextInputType.emailAddress,
                           ),
                         ],

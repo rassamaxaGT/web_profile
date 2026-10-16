@@ -76,7 +76,7 @@ class HeaderSection extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: const [
                   Text(
-                    'Alexandr R.',
+                    'Richard Brook',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
@@ -288,11 +288,11 @@ class _EyeTrackingLogo extends StatelessWidget {
                     _buildEye(pupilX, pupilY),
                   ],
                 ),
-                // Микро-подпись AR снизу
+                // Микро-подпись RB снизу
                 Positioned(
                   bottom: 4,
                   child: Text(
-                    'AR',
+                    'RB',
                     style: TextStyle(
                       fontSize: 7,
                       fontWeight: FontWeight.w900,
