@@ -79,12 +79,27 @@ class _PortfolioHomePageState extends State<PortfolioHomePage> {
   bool _rightArrowFled = false;
   double _levelTiltTurns = 0.0;
 
+  // Сценарий первого скролла: плавный сдвиг по другой оси и стрелка рядом с контентом
+  bool _hasCompletedHorizontalScroll = false;
+  double _scrollShiftX = 0.0;
+  bool _showScrollRestoreArrow = false;
+  bool _restoreArrowVisible = false;
+  bool _restoreArrowFled = false;
+
+  // Однократный показ ошибки графического конвейера
+  bool _hasShownErrorDialog = false;
+
   void _onLeftArrowPressed() {
     setState(() {
       _leftShiftClicks++;
       if (_leftShiftClicks >= 4) {
         _leftShiftClicks = 0;
         _interfaceShiftX = 0.0;
+        _scrollShiftX = 0.0;
+        _hasCompletedHorizontalScroll = false;
+        _showScrollRestoreArrow = false;
+        _restoreArrowVisible = false;
+        _restoreArrowFled = false;
       } else {
         _interfaceShiftX -= 170.0;
       }
@@ -105,19 +120,91 @@ class _PortfolioHomePageState extends State<PortfolioHomePage> {
     });
   }
 
+  void _onRestoreArrowPressed() {
+    if (_restoreArrowFled) return;
+
+    setState(() {
+      _restoreArrowFled = true;
+    });
+
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: NeoColors.surface,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        elevation: 6,
+        duration: const Duration(seconds: 4),
+        content: const Text(
+          '💨 Стрелка попыталась вернуть сайт, но не справилась с массой вёрстки и улетела за экран.',
+          style: TextStyle(color: NeoColors.textPrimary, fontWeight: FontWeight.w600),
+        ),
+      ),
+    );
+    // Стрелка улетает насовсем без автоматического возврата по таймеру
+  }
+
   @override
   void initState() {
     super.initState();
-    // Запуск таймера ошибки через 12 секунд после захода на страницу
-    _scheduleErrorDialog(seconds: 12);
+    // Запуск таймера ошибки графического конвейера позже (через 55 секунд) и однократно
+    _scheduleErrorDialog(seconds: 55);
     _scrollController.addListener(_handleScroll);
     _resetInactivityTimer();
   }
 
   void _handleScroll() {
-    final fallen = _scrollController.hasClients && _scrollController.offset > 25;
+    if (!_scrollController.hasClients) return;
+    final offset = _scrollController.offset;
+    final fallen = offset > 25;
     if (fallen != _isHeroFallen) {
       setState(() => _isHeroFallen = fallen);
+    }
+  }
+
+  void _onPointerSignal(PointerSignalEvent event) {
+    if (event is PointerScrollEvent) {
+      if (!_hasCompletedHorizontalScroll) {
+        final dy = event.scrollDelta.dy;
+        if (dy.abs() > 0.1) {
+          final maxShift = (MediaQuery.of(context).size.width < 700) ? -90.0 : -170.0;
+          setState(() {
+            _scrollShiftX = (_scrollShiftX - dy).clamp(maxShift, 0.0);
+            if (_scrollShiftX <= maxShift) {
+              _hasCompletedHorizontalScroll = true;
+              _scrollShiftX = maxShift;
+            }
+            if (_scrollShiftX < -15.0) {
+              _showScrollRestoreArrow = true;
+              _restoreArrowVisible = true;
+            } else if (_scrollShiftX >= 0.0) {
+              _showScrollRestoreArrow = false;
+              _restoreArrowVisible = false;
+            }
+          });
+        }
+      }
+    }
+  }
+
+  void _onPointerMove(PointerMoveEvent event) {
+    if (!_hasCompletedHorizontalScroll &&
+        (event.buttons == kPrimaryMouseButton || event.kind == PointerDeviceKind.touch)) {
+      final dy = event.delta.dy;
+      if (dy.abs() > 0.5) {
+        final maxShift = (MediaQuery.of(context).size.width < 700) ? -90.0 : -170.0;
+        setState(() {
+          _scrollShiftX = (_scrollShiftX + dy).clamp(maxShift, 0.0);
+          if (_scrollShiftX <= maxShift) {
+            _hasCompletedHorizontalScroll = true;
+            _scrollShiftX = maxShift;
+          }
+          if (_scrollShiftX < -15.0) {
+            _showScrollRestoreArrow = true;
+            _restoreArrowVisible = true;
+          }
+        });
+      }
     }
   }
 
@@ -152,15 +239,17 @@ class _PortfolioHomePageState extends State<PortfolioHomePage> {
     });
   }
 
-  void _scheduleErrorDialog({int seconds = 25}) {
+  void _scheduleErrorDialog({int seconds = 55}) {
+    if (_hasShownErrorDialog) return;
     _errorDialogTimer?.cancel();
     _errorDialogTimer = Timer(Duration(seconds: seconds), () {
-      if (mounted) _showErrorReloadDialog();
+      if (mounted && !_hasShownErrorDialog) _showErrorReloadDialog();
     });
   }
 
   void _showErrorReloadDialog() {
-    if (!mounted) return;
+    if (!mounted || _hasShownErrorDialog) return;
+    _hasShownErrorDialog = true;
     showDialog(
       context: context,
       barrierDismissible: true, // Позволяет закрыть кликом по фону
@@ -187,7 +276,6 @@ class _PortfolioHomePageState extends State<PortfolioHomePage> {
                     child: GestureDetector(
                       onTap: () {
                         Navigator.of(dialogContext).pop();
-                        _scheduleErrorDialog(seconds: 40);
                       },
                       child: Container(
                         width: 30,
@@ -289,7 +377,6 @@ class _PortfolioHomePageState extends State<PortfolioHomePage> {
                                 ),
                               ),
                             );
-                            _scheduleErrorDialog(seconds: 45);
                           },
                         ),
                         NeomorphicButton(
@@ -301,7 +388,6 @@ class _PortfolioHomePageState extends State<PortfolioHomePage> {
                           onPressed: () {
                             Navigator.of(dialogContext).pop();
                             _rotatePage(); // Вращение страницы на 90 градусов!
-                            _scheduleErrorDialog(seconds: 35);
                           },
                         ),
                       ],
@@ -364,10 +450,19 @@ class _PortfolioHomePageState extends State<PortfolioHomePage> {
   }
 
   void _scrollToKey(GlobalKey key) {
-    final context = key.currentContext;
-    if (context != null) {
+    if (!_hasCompletedHorizontalScroll) {
+      final maxShift = (MediaQuery.of(context).size.width < 700) ? -90.0 : -170.0;
+      setState(() {
+        _hasCompletedHorizontalScroll = true;
+        _scrollShiftX = maxShift;
+        _showScrollRestoreArrow = true;
+        _restoreArrowVisible = true;
+      });
+    }
+    final targetContext = key.currentContext;
+    if (targetContext != null) {
       Scrollable.ensureVisible(
-        context,
+        targetContext,
         duration: const Duration(milliseconds: 650),
         curve: Curves.easeInOutCubic,
       );
@@ -406,6 +501,15 @@ class _PortfolioHomePageState extends State<PortfolioHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final totalShiftX = _interfaceShiftX + _scrollShiftX;
+    final contentWidth = screenWidth > 1280 ? 1280.0 : screenWidth;
+    final contentRight = (screenWidth + contentWidth) / 2.0;
+    final shiftedContentRight = contentRight + totalShiftX;
+    final arrowLeft = (shiftedContentRight + (screenWidth < 700 ? 10.0 : 18.0))
+        .clamp(10.0, screenWidth - 62.0);
+    final fleeDistance = screenWidth - arrowLeft + 160.0;
+
     Widget mainContent = Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 1280),
@@ -424,7 +528,9 @@ class _PortfolioHomePageState extends State<PortfolioHomePage> {
               child: SelectionArea(
                 child: SingleChildScrollView(
                   controller: _scrollController,
-                  physics: const BouncingScrollPhysics(),
+                  physics: _hasCompletedHorizontalScroll
+                      ? const BouncingScrollPhysics()
+                      : const NeverScrollableScrollPhysics(),
                   child: Column(
                     children: [
                       Container(
@@ -459,20 +565,29 @@ class _PortfolioHomePageState extends State<PortfolioHomePage> {
       backgroundColor: NeoColors.surface,
       body: MouseRegion(
         onHover: _onMouseHover,
-        child: Stack(
-          children: [
-            // Сдвиг всего интерфейса влево (левая стрелка) + поворот (рефреш / уровень)
-            AnimatedContainer(
-              duration: Duration(milliseconds: _leftShiftClicks == 0 ? 700 : 380),
-              curve: _leftShiftClicks == 0 ? Curves.elasticOut : Curves.easeOutCubic,
-              transform: Matrix4.translationValues(_interfaceShiftX, 0, 0),
-              child: AnimatedRotation(
-                turns: _pageTurns + _levelTiltTurns,
-                duration: const Duration(milliseconds: 700),
-                curve: Curves.easeInOutBack,
-                child: mainContent,
+        child: Listener(
+          onPointerSignal: _onPointerSignal,
+          onPointerMove: _onPointerMove,
+          child: Stack(
+            children: [
+              // Сдвиг всего интерфейса влево (левая стрелка / первый скролл) + поворот (рефреш / уровень)
+              AnimatedContainer(
+                duration: Duration(
+                  milliseconds: !_hasCompletedHorizontalScroll
+                      ? 140
+                      : (_leftShiftClicks == 0 ? 700 : 380),
+                ),
+                curve: !_hasCompletedHorizontalScroll
+                    ? Curves.easeOutCubic
+                    : (_leftShiftClicks == 0 ? Curves.elasticOut : Curves.easeOutCubic),
+                transform: Matrix4.translationValues(totalShiftX, 0, 0),
+                child: AnimatedRotation(
+                  turns: _pageTurns + _levelTiltTurns,
+                  duration: const Duration(milliseconds: 700),
+                  curve: Curves.easeInOutBack,
+                  child: mainContent,
+                ),
               ),
-            ),
 
             // Оверлей фонарика (Тёмная тема в пещере)
             if (_isFlashlight)
@@ -644,11 +759,86 @@ class _PortfolioHomePageState extends State<PortfolioHomePage> {
                 },
               ),
             ),
+
+            // Стрелка в освободившемся справа пространстве рядом с контентом
+            if (_showScrollRestoreArrow)
+              Positioned(
+                left: arrowLeft,
+                top: MediaQuery.of(context).size.height * 0.44,
+                child: AnimatedContainer(
+                  duration: Duration(milliseconds: _restoreArrowFled ? 600 : 250),
+                  curve: _restoreArrowFled ? Curves.easeInQuad : Curves.easeOutBack,
+                  transform: Matrix4.translationValues(
+                    _restoreArrowFled ? fleeDistance : 0.0,
+                    0,
+                    0,
+                  ),
+                  child: AnimatedScale(
+                    scale: _restoreArrowVisible ? 1.0 : 0.0,
+                    duration: const Duration(milliseconds: 350),
+                    curve: Curves.easeOutBack,
+                    child: AnimatedOpacity(
+                      opacity: _restoreArrowVisible ? 1.0 : 0.0,
+                      duration: const Duration(milliseconds: 250),
+                      child: Tooltip(
+                        message: _restoreArrowFled
+                            ? 'Стрелка улетела вправо...'
+                            : 'Вернуть интерфейс на место',
+                        child: MouseRegion(
+                          cursor: SystemMouseCursors.click,
+                          child: GestureDetector(
+                            onTap: _onRestoreArrowPressed,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 48,
+                                  height: 48,
+                                  decoration: BoxDecoration(
+                                    color: NeoColors.surface,
+                                    shape: BoxShape.circle,
+                                    boxShadow: NeoShadows.raisedSm(),
+                                  ),
+                                  child: const Center(
+                                    child: Icon(
+                                      Icons.arrow_forward_ios_rounded,
+                                      size: 18,
+                                      color: NeoColors.lavenderDark,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: NeoColors.surface,
+                                    borderRadius: BorderRadius.circular(NeoRadius.sm),
+                                    boxShadow: NeoShadows.raisedSm(),
+                                  ),
+                                  child: const Text(
+                                    'Вернуть',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600,
+                                      color: NeoColors.textSecondary,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 class _FlashlightPainter extends CustomPainter {
